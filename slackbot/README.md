@@ -22,7 +22,10 @@ Add the builder as the first step in your project's `cloudbuild.yaml`: this trig
 ```yaml
 steps:
 - name: 'gcr.io/$PROJECT_ID/slackbot'
-  args: [ '--build', '$BUILD_ID',
+  args: [ '--title', '$_TITLE',
+          '--icon', '$_ICON',
+          '--tag', '$_TAG',
+          '--build', '$BUILD_ID',
           '--webhook', '<Add your webhook URL here>' ]
 ...
 ```

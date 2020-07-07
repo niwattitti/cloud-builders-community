@@ -1,6 +1,14 @@
 steps:
 - name: 'gcr.io/$PROJECT_ID/slackbot'
-  args: [ '--build', '$BUILD_ID',
+  args: [ '--title', '$_TITLE',
+          '--icon', '$_ICON',
+          '--tag', '$_TAG',
+          '--build', '$BUILD_ID',
           '--webhook', '<Add your webhook URL here>' ]
 - name: 'gcr.io/cloud-builders/docker'
   args: [ 'build', '.', '-f', 'Dockerfile-failure']
+  substitutions:
+    _TITLE: 'Release trigger'
+    _ICON: ':cloudbuild:'
+    _SLACK_WEBHOOK_URL: https://hooks.slack.com/services/xxxxxxxx/xxxxxxxxx/xxxxxxxxxxxxxxxx
+    _TAG: 'test'

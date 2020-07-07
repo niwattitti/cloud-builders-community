@@ -11,13 +11,16 @@ import (
 )
 
 // Trigger starts an independent watcher build.
-func Trigger(ctx context.Context, projectId string, buildId string, webhook string, copyName bool, copyTags bool, copyTimeout bool) {
+func Trigger(ctx context.Context, title string, icon string, tag string, projectId string, buildId string, webhook string, copyName bool, copyTags bool, copyTimeout bool) {
 	svc := gcbClient(ctx)
 	watcherBuild := &cloudbuild.Build{
 		Steps: []*cloudbuild.BuildStep{
 			&cloudbuild.BuildStep{
 				Name: "gcr.io/$PROJECT_ID/slackbot",
 				Args: []string{
+					fmt.Sprintf("--title=%s", title),
+					fmt.Sprintf("--icon=%s", icon),
+					fmt.Sprintf("--tag=%s", tag),
 					fmt.Sprintf("--build=%s", buildId),
 					fmt.Sprintf("--webhook=%s", webhook),
 					"--mode=monitor",

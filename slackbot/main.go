@@ -11,9 +11,12 @@ import (
 )
 
 var (
+	title   = flag.String("title", "", "Notification title. e.g. trigger name.")
+	icon    = flag.String("icon", "", "Notification icon.")
 	buildId     = flag.String("build", "", "Id of monitored Build")
 	webhook     = flag.String("webhook", "", "Slack webhook URL")
 	mode        = flag.String("mode", "trigger", "Mode the builder runs in")
+	tag         = flag.String("tag", "", "Results with filter tag")
 	copyName    = flag.Bool("copy-name", false, "Copy name of slackbot's build step from monitored build to watcher build")
 	copyTags    = flag.Bool("copy-tags", false, "Copy tags from monitored build to watcher build")
 	copyTimeout = flag.Bool("copy-timeout", false, "Copy timeout from monitored build to watcher build")
@@ -23,6 +26,18 @@ func main() {
 	log.Print("Starting slackbot")
 	flag.Parse()
 	ctx := context.Background()
+	
+	if *title == "" {
+		log.Fatalf("title must be provided.")
+	}
+
+	if *icon == "" {
+		log.Fatalf("icon must be provided.")
+	}
+	
+	if *tag == "" {
+		log.Fatalf("Filter tag must be provided.")
+	}
 
 	if *webhook == "" {
 		log.Fatalf("Slack webhook must be provided.")
@@ -48,14 +63,14 @@ func main() {
 	if *mode == "trigger" {
 		// Trigger another build to run the monitor.
 		log.Printf("Starting trigger mode for build %s", *buildId)
-		slackbot.Trigger(ctx, projectId, *buildId, *webhook, *copyName, *copyTags, *copyTimeout)
+		slackbot.Trigger(ctx, *title, *icon, *tag, projectId, *buildId, *webhook, *copyName, *copyTags, *copyTimeout)
 		return
 	}
 
 	if *mode == "monitor" {
 		// Monitor the other build until completion.
 		log.Printf("Starting monitor mode for build %s", *buildId)
-		slackbot.Monitor(ctx, projectId, *buildId, *webhook)
+		slackbot.Monitor(ctx, *title, *icon, *tag, projectId, *buildId, *webhook)
 		return
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -12,22 +13,35 @@ import (
 )
 
 // Notify posts a notification to Slack that the build is complete.
-func Notify(b *cloudbuild.Build, webhook string) {
-	url := fmt.Sprintf("https://console.cloud.google.com/cloud-build/builds/%s", b.Id)
+func Notify(b *cloudbuild.Build, title string, icon string, tag string, webhook string) {
+	burl := fmt.Sprintf("https://console.cloud.google.com/cloud-build/builds/%s?project=%s", b.Id, b.ProjectId)
+	query := fmt.Sprintf("tags=\"%s\"", tag)
+	params := url.Values{}
+	params.Add("query", query)
+	params.Add("project", b.ProjectId)
+	turl := fmt.Sprintf("https://console.cloud.google.com/cloud-build/builds?%s", params.Encode())
+
 	var i string
+	var c string
 	switch b.Status {
 	case "SUCCESS":
 		i = ":white_check_mark:"
+		c = "#9CCC65"
 	case "FAILURE":
 		i = ":x:"
+		c = "#FF5252"
 	case "CANCELLED":
 		i = ":wastebasket:"
+		c = "#CCD1D9"
 	case "TIMEOUT":
 		i = ":hourglass:"
+		c = "#FF5252"
 	case "STATUS_UNKNOWN", "INTERNAL_ERROR":
 		i = ":interrobang:"
+		c = "#FF5252"
 	default:
 		i = ":question:"
+		c = "#FF5252"
 	}
 
 	startTime, err := time.Parse(time.RFC3339, b.StartTime)
@@ -39,20 +53,28 @@ func Notify(b *cloudbuild.Build, webhook string) {
 		log.Fatalf("Failed to parse Build.FinishTime: %v", err)
 	}
 	buildDuration := finishTime.Sub(startTime).Truncate(time.Second)
+	text := fmt.Sprintf("[%s] %s. %s Id: %s\nBuildDuration:%s\nStartTime: %s\nFinishTime: %s", b.Status, title, i, b.Id, buildDuration, b.StartTime, b.FinishTime)
 
 	msgFmt := `{
-		"text": "%s build _%s_ after _%s_",
+		"icon_emoji": "%s",
+		"username": "Cloud Build/%s",
 		"attachments": [{
-			"fallback": "Open build details at %s",
-			"actions": [{
-				"type": "button",
-				"text": "Open details",
-				"url": "%s"
-			}]
+				"color": "%s",
+				"text": "%s",
+				"actions": [{
+						"type": "button",
+						"text": "Details",
+						"url": "%s"
+					},
+					{
+						"type": "button",
+						"text": "Results using %s tag",
+						"url": "%s"
+				}]
 		}]
 	}`
 
-	j := fmt.Sprintf(msgFmt, i, b.Status, buildDuration, url, url)
+	j := fmt.Sprintf(msgFmt, icon, b.ProjectId, c, text, burl, tag, turl)
 
 	r := strings.NewReader(j)
 	resp, err := http.Post(webhook, "application/json", r)
